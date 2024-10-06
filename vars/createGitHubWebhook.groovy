@@ -27,7 +27,7 @@ def call(String repoUrl, String webhookUrl, String githubToken) {
     def webhookPayload = JsonOutput.toJson([
         "name"       : "web",
         "active"     : true,
-        "events"     : ["push", "pull_request"],
+        "events"     : ["push"],
         "config"     : [
             "url"          : webhookUrl,
             "content_type" : "json",
