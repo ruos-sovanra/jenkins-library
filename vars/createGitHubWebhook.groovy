@@ -42,3 +42,4 @@ def parseGitHubUrl(String url) {
     }
     error("Invalid GitHub URL format: ${url}")
 }
+
