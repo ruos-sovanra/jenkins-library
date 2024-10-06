@@ -3,15 +3,25 @@ import groovy.json.JsonSlurper
 import hudson.util.Secret
 
 // Define a static webhook secret
-def WEBHOOK_SECRET = '1102b43d4bae5e52ede6fc05ee5dc20e91'  // Replace with your actual secret
+ // Replace with your actual secret
 
 def call(String repoUrl, String webhookUrl, String githubToken) {
+
+    def WEBHOOK_SECRET = '1102b43d4bae5e52ede6fc05ee5dc20e91'
     // Extract owner and repo name from repoUrl
     def repoParts = repoUrl.tokenize('/')
     def owner = repoParts[-2]
     def repo = repoParts[-1].replace('.git', '')
 
     def apiUrl = "https://api.github.com/repos/${owner}/${repo}/hooks"
+
+    echo "Creating webhook for ${repo} repository..."
+    echo "API URL: ${apiUrl}"
+    echo "Webhook URL: ${webhookUrl}"
+    echo "GitHub Token: ${githubToken}"
+    echo "Webhook Secret: ${WEBHOOK_SECRET}"
+    echo "Owner: ${owner}"
+    echo "Repo: ${repo}"
 
     // Prepare the webhook configuration payload
     def webhookPayload = JsonOutput.toJson([
