@@ -1,45 +1,53 @@
-def createGitHubWebhook(String githubToken, String repoUrl, String webhookUrl, String webhookSecret) {
-    def webhookEvents = '["push"]'
+def call(Map config) {
+    def gitUrl = config.gitUrl
+    def githubToken = config.githubToken
+    def jenkinsUrl = config.jenkinsUrl
+    def webhookSecret = config.webhookSecret
 
-    def (userOrg, repoName) = parseGitHubUrl(repoUrl)
-    def fullRepoName = "${userOrg}/${repoName}"
+    def (githubOwner, repositoryName) = extractGitHubInfo(gitUrl)
 
-    echo "Creating webhook for ${fullRepoName}"
+    if (!githubOwner || !repositoryName) {
+        error "Failed to extract GitHub information from Git URL: ${gitUrl}"
+        return false
+    }
 
-    try {
-        def response = httpRequest(
-            url: "https://api.github.com/repos/${fullRepoName}/hooks",
-            httpMode: 'POST',
-            contentType: 'APPLICATION_JSON',
-            customHeaders: [[name: 'Authorization', value: "token ${githubToken}"]],
-            requestBody: """{
-                "name": "web",
-                "active": true,
-                "events": ${webhookEvents},
-                "config": {
-                    "url": "${webhookUrl}",
-                    "content_type": "json",
-                    "secret": "${webhookSecret}",
-                    "insecure_ssl": "0"
-                }
-            }"""
-        )
+    def apiUrl = "https://api.github.com/repos/${githubOwner}/${repositoryName}/hooks"
 
-        if (response.status == 201) {
-            echo "Webhook successfully created for ${fullRepoName}"
-        } else {
-            error("Failed to create webhook for ${fullRepoName}: ${response.content}")
-        }
-    } catch (Exception e) {
-        error("Error creating webhook for ${fullRepoName}: ${e.message}")
+    def payload = [
+        name: 'web',
+        active: true,
+        events: ['push', 'pull_request'],
+        config: [
+            url: "${jenkinsUrl}/github-webhook/",
+            content_type: 'json',
+            insecure_ssl: '0',
+            secret: webhookSecret
+        ]
+    ]
+
+    def response = httpRequest(
+        url: apiUrl,
+        httpMode: 'POST',
+        contentType: 'APPLICATION_JSON',
+        customHeaders: [[name: 'Authorization', value: "token ${githubToken}"]],
+        requestBody: groovy.json.JsonOutput.toJson(payload)
+    )
+
+    if (response.status == 201) {
+        echo "GitHub webhook created successfully for ${repositoryName}"
+        return true
+    } else {
+        error "Failed to create GitHub webhook. Status: ${response.status}, Response: ${response.content}"
+        return false
     }
 }
 
-def parseGitHubUrl(String url) {
-    def matcher = url =~ /github\.com[:\/](.+)\/(.+?)(?:\.git)?$/
-    if (matcher) {
-        return [matcher[0][1], matcher[0][2]]
+def extractGitHubInfo(String gitUrl) {
+    def matcher = gitUrl =~ /(?:https:\/\/github\.com\/|git@github\.com:)([^\/]+)\/([^\/\.]+)(?:\.git)?$/
+    if (matcher.find()) {
+        return [matcher.group(1), matcher.group(2)]
     }
-    error("Invalid GitHub URL format: ${url}")
+    return [null, null]
 }
 
+return this
