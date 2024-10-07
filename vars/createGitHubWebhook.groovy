@@ -2,13 +2,14 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import hudson.util.Secret
 
-// Define a static webhook secret
- // Replace with your actual secret
-
 def call(String repoUrl, String webhookUrl, String githubToken) {
 
+    if (!githubToken) {
+        echo "GitHub token is null, skipping webhook creation."
+        return
+    }
+
     def WEBHOOK_SECRET = '1102b43d4bae5e52ede6fc05ee5dc20e91'
-    // Extract owner and repo name from repoUrl
     def repoParts = repoUrl.tokenize('/')
     def owner = repoParts[-2]
     def repo = repoParts[-1].replace('.git', '')
@@ -23,6 +24,22 @@ def call(String repoUrl, String webhookUrl, String githubToken) {
     echo "Owner: ${owner}"
     echo "Repo: ${repo}"
 
+    // Fetch existing webhooks
+    def existingWebhooksResponse = httpRequest(
+        url: apiUrl,
+        httpMode: 'GET',
+        customHeaders: [[name: 'Authorization', value: "Bearer ${githubToken}"]],
+        contentType: 'APPLICATION_JSON'
+    )
+
+    def existingWebhooks = new JsonSlurper().parseText(existingWebhooksResponse.content)
+    def webhookExists = existingWebhooks.find { it.config.url == webhookUrl }
+
+    if (webhookExists) {
+        echo "Webhook already exists: ${webhookExists.url}"
+        return
+    }
+
     // Prepare the webhook configuration payload
     def webhookPayload = JsonOutput.toJson([
         "name"       : "web",
@@ -32,7 +49,7 @@ def call(String repoUrl, String webhookUrl, String githubToken) {
             "url"          : webhookUrl,
             "content_type" : "json",
             "insecure_ssl" : "0",
-            "secret"       : WEBHOOK_SECRET // Use the static webhook secret here
+            "secret"       : WEBHOOK_SECRET
         ]
     ])
 
