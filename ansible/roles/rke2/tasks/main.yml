@@ -1,0 +1,12 @@
+---
+- name: Debug rke2_action variable
+  debug:
+    msg: "rke2_action is set to {{ rke2_action }}"
+
+- name: Install RKE2 if rke2_action is set to install
+  include_tasks: install.yml
+  when: rke2_action == 'install'
+
+- name: Uninstall RKE2 if rke2_action is set to uninstall
+  include_tasks: uninstall.yml
+  when: rke2_action == 'uninstall'

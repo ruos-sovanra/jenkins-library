@@ -1,0 +1,11 @@
+---
+- name: Stop RKE2 service
+  systemd:
+    name: rke2-server
+    state: stopped
+
+- name: Uninstall RKE2
+  shell: |
+    /usr/local/bin/rke2-uninstall.sh
+  args:
+    warn: false
