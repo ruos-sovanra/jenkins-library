@@ -1,6 +1,8 @@
+// vars/manageRKE2.groovy
+
 def installRKE2() {
     def command = "ansible-playbook -i ansible/inventory/development ansible/playbooks/install_rke2.yml"
-    def process = command.execute()
+    def process = command.execute(null, new File("${env.WORKSPACE}/ansible"))
     process.waitFor()
     if (process.exitValue() == 0) {
         println "RKE2 installation completed successfully."
@@ -12,7 +14,7 @@ def installRKE2() {
 
 def uninstallRKE2() {
     def command = "ansible-playbook -i ansible/inventory/development ansible/roles/rke2/tasks/uninstall.yml"
-    def process = command.execute()
+    def process = command.execute(null, new File("${env.WORKSPACE}/ansible"))
     process.waitFor()
     if (process.exitValue() == 0) {
         println "RKE2 uninstallation completed successfully."
