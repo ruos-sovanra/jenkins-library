@@ -1,2 +1,2 @@
-# ansible-nginx/group_vars/development.yml
-rke2_action: install
+---
+domain: "psa-khmer.world"
